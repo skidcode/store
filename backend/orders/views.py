@@ -1,11 +1,12 @@
-from rest_framework import viewsets
-from rest_framework.views import APIView
+from rest_framework import viewsets, permissions, filters
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework import status
+from rest_framework.views import APIView
 
-from .filters import OrderFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
+from .permissions import IsAdminOrOrderOwner
 from .models import Cart, CartItem, Order, OrderItem
+from .filters import OrderFilter
 from .serializers import (
     CartSerializer,
     CreateOrderSerializer,
@@ -15,41 +16,31 @@ from .serializers import (
 )
 from products.models import Product
 
-# ---------------------------------------------------------
-#   CART VIEWS
-# ---------------------------------------------------------
+
+# ---------------------------------------------------
+# CART
+# ---------------------------------------------------
 
 
 class CartView(APIView):
     """
-    GET /api/cart/
-    Returns the authenticated user's cart.
-    If it does not exist, it will be created automatically.
+    Retrieves the cart for the authenticated user.
+    Cart is created automatically if missing.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        return Response(CartSerializer(cart).data)
 
 
 class AddToCartView(APIView):
     """
-    POST /api/cart/add/
-    Adds a product to the authenticated user's cart.
-
-    Body:
-    {
-        "product_id": int,
-        "quantity": int
-    }
-
-    If the item already exists, its quantity is increased.
+    Adds a product to the user's cart or increases quantity.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         serializer = AddToCartSerializer(data=request.data)
@@ -61,10 +52,10 @@ class AddToCartView(APIView):
         cart, _ = Cart.objects.get_or_create(user=request.user)
         item, created = CartItem.objects.get_or_create(cart=cart, product=product)
 
-        if not created:
-            item.quantity += quantity
-        else:
+        if created:
             item.quantity = quantity
+        else:
+            item.quantity += quantity
 
         item.save()
 
@@ -73,19 +64,10 @@ class AddToCartView(APIView):
 
 class UpdateCartItemView(APIView):
     """
-    PATCH /api/cart/item/<item_id>/update/
-    Updates the quantity of a cart item.
-
-    Body:
-    {
-        "quantity": int
-    }
-
-    Errors:
-    - 404 if item does not exist or does not belong to the user
+    Updates the quantity of a specific item in the user's cart.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, item_id):
         serializer = UpdateCartItemSerializer(data=request.data)
@@ -104,11 +86,10 @@ class UpdateCartItemView(APIView):
 
 class RemoveCartItemView(APIView):
     """
-    DELETE /api/cart/item/<item_id>/remove/
-    Removes a product from the authenticated user's cart.
+    Removes an item from the user's cart.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, item_id):
         try:
@@ -120,35 +101,17 @@ class RemoveCartItemView(APIView):
         return Response({"detail": "Item removed"}, status=200)
 
 
-# ---------------------------------------------------------
-#   ORDER VIEWS
-# ---------------------------------------------------------
+# ---------------------------------------------------
+# ORDERS
+# ---------------------------------------------------
 
 
 class CreateOrderView(APIView):
     """
-    POST /api/orders/create/
-    Creates an order using the authenticated user's cart.
-
-    Body:
-    {
-        "shipping_address": string
-    }
-
-    Steps:
-    1. Validate shipping data
-    2. Get user's cart
-    3. Validate that the cart is not empty
-    4. Calculate total
-    5. Create order
-    6. Create OrderItems snapshot
-    7. Clear the cart
-
-    Returns:
-    - Order data (JSON)
+    Creates an order from the user's cart.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         user = request.user
@@ -158,7 +121,7 @@ class CreateOrderView(APIView):
 
         shipping_address = serializer.validated_data["shipping_address"]
 
-        # Retrieve cart
+        # Get user cart
         try:
             cart = Cart.objects.get(user=user)
         except Cart.DoesNotExist:
@@ -167,10 +130,10 @@ class CreateOrderView(APIView):
         if cart.items.count() == 0:
             return Response({"detail": "Cart is empty"}, status=400)
 
-        # Calculate total
+        # Compute total
         total = sum(item.product.price * item.quantity for item in cart.items.all())
 
-        # Create order
+        # Create Order
         order = Order.objects.create(
             user=user,
             status="PENDING",
@@ -178,7 +141,7 @@ class CreateOrderView(APIView):
             shipping_address=shipping_address,
         )
 
-        # Create order items snapshot
+        # Create order items
         for item in cart.items.all():
             OrderItem.objects.create(
                 order=order,
@@ -193,34 +156,29 @@ class CreateOrderView(APIView):
         return Response(OrderSerializer(order).data, status=201)
 
 
-class ListOrdersView(APIView):
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    GET /api/orders/
-    Returns all orders belonging to the authenticated user.
-    Ordered by creation date (newest first).
+    Read-only access to orders.
+
+    - Regular users only see *their own orders*.
+    - Admins can see *all* orders.
+    - Supports advanced filtering.
     """
 
-    permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all().order_by("-created_at")
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminOrOrderOwner]
 
-    def get(self, request):
-        orders = Order.objects.filter(user=request.user).order_by("-created_at")
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data, status=200)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = OrderFilter
 
 
 class CancelOrderView(APIView):
     """
-    POST /api/orders/<order_id>/cancel/
-    Cancels the order IF:
-    - It belongs to the authenticated user
-    - Its status is 'PENDING'
-
-    Errors:
-    - 404: order not found
-    - 400: cannot cancel non-pending orders
+    Allows a user to cancel their own order (if still PENDING).
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, order_id):
         try:
@@ -237,21 +195,3 @@ class CancelOrderView(APIView):
         order.save()
 
         return Response({"detail": "Order cancelled"}, status=200)
-
-
-class ListAllOrdersView(APIView):
-    """
-    GET /api/admin/orders/
-    ADMIN ONLY
-
-    Returns all orders in the system.
-    (Note: Filters are configured but APIView does not apply them automatically)
-
-    Recommended improvement:
-    Convert to ListAPIView for full filter support.
-    """
-
-    queryset = Order.objects.all().order_by("-created_at")
-    serializer_class = OrderSerializer
-    permission_classes = [IsAdminUser]
-    filterset_class = OrderFilter
