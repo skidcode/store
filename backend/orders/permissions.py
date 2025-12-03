@@ -1,23 +1,19 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsAdminOrOrderOwner(BasePermission):
+class IsAdmin(BasePermission):
     """
-    Custom permission class for Order access.
+    Allows access only to admin users.
+    """
 
-    Rules:
-    - Admin users have full access.
-    - Regular authenticated users can only access their own orders.
+    def has_permission(self, request, view):
+        return request.user and request.user.is_staff
+
+
+class IsOrderOwner(BasePermission):
+    """
+    Allows access only to the owner of the order.
     """
 
     def has_object_permission(self, request, view, obj):
-        # Admin can do anything
-        if request.user.is_staff:
-            return True
-
-        # Regular users can only see their own orders
         return obj.user == request.user
-
-    def has_permission(self, request, view):
-        # Must be authenticated at least
-        return request.user and request.user.is_authenticated
