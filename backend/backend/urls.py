@@ -9,6 +9,7 @@ from accounts.views import register
 from products.views import ProductViewSet, CategoryViewSet
 from orders.views import (
     CartViewSet,
+    CreateOrderView,
     OrderViewSet,
     CartView,
     AddToCartView,
@@ -43,6 +44,7 @@ urlpatterns = [
         RemoveCartItemView.as_view(),
         name="cart_item_remove",
     ),
+    path("api/orders/create/", CreateOrderView.as_view(), name="order_create"),
     # API
     path("api/", include(router.urls)),
 ]
