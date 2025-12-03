@@ -3,8 +3,20 @@
 A modern e-commerce application built with **Django REST Framework (backend)** and **React (frontend)**.  
 Includes authentication, product management, shopping cart, orders, and Stripe payments.
 
-**Available in:**  
-[English](README.md) · [Español](README.es.md)
+**Available in:**
+
+## Readme
+
+➤ Spanish version:  
+[Español](README.es.md)
+
+## Roadmap
+
+➤ Full roadmap is available here:  
+[Español](ROADMAP.md)
+
+➤ Spanish version:  
+[English](ROADMAP.es.md)
 
 ---
 

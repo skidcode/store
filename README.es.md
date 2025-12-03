@@ -7,15 +7,16 @@ Incluye autenticación, gestión de productos, carrito de compras, órdenes y pa
 
 ## Readme
 
-[English](README.md) · [Español](README.es.md)
+➤ English version:  
+[English](README.md)
 
 ## Roadmap
 
 ➤ Full roadmap is available here:  
-[ROADMAP.md](ROADMAP.md)
+[Español](ROADMAP.md)
 
 ➤ Spanish version:  
-[ROADMAP.es.md](ROADMAP.es.md)
+[English](ROADMAP.es.md)
 
 ---
 
