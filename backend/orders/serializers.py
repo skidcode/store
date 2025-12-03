@@ -1,6 +1,21 @@
 from rest_framework import serializers
 from .models import Cart, CartItem, Order, OrderItem
 from books.serializers import BookSerializer
+from books.models import Book
+
+
+class AddToCartSerializer(serializers.Serializer):
+    book_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(default=1)
+
+    def validate_book_id(self, value):
+        if not Book.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Book not found")
+        return value
+
+
+class UpdateCartItemSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField()
 
 
 class CartItemSerializer(serializers.ModelSerializer):

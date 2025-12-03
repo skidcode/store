@@ -1,6 +1,11 @@
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 from .models import Book, Author, Category
 from .serializers import BookSerializer, AuthorSerializer, CategorySerializer
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
 
 
 class BookViewSet(viewsets.ReadOnlyModelViewSet):
