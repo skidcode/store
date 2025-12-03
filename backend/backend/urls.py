@@ -6,7 +6,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from accounts.views import register
-from books.views import BookViewSet, AuthorViewSet, CategoryViewSet
+from products.views import ProductViewSet, CategoryViewSet
 from orders.views import (
     CartViewSet,
     OrderViewSet,
@@ -17,8 +17,8 @@ from orders.views import (
 )
 
 router = DefaultRouter()
-router.register(r"books", BookViewSet, basename="books")
-router.register(r"authors", AuthorViewSet, basename="authors")
+router.register(r"products", ProductViewSet)
+router.register(r"product-categories", CategoryViewSet)
 router.register(r"categories", CategoryViewSet, basename="categories")
 
 router.register(r"carts", CartViewSet, basename="carts")

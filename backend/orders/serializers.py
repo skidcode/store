@@ -1,16 +1,17 @@
 from rest_framework import serializers
+
 from .models import Cart, CartItem, Order, OrderItem
-from books.serializers import BookSerializer
-from books.models import Book
+from products.models import Product
+from products.serializers import ProductSerializer
 
 
 class AddToCartSerializer(serializers.Serializer):
-    book_id = serializers.IntegerField()
+    product_id = serializers.IntegerField()
     quantity = serializers.IntegerField(default=1)
 
-    def validate_book_id(self, value):
-        if not Book.objects.filter(id=value).exists():
-            raise serializers.ValidationError("Book not found")
+    def validate_product_id(self, value):
+        if not Product.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Product not found")
         return value
 
 
@@ -19,7 +20,7 @@ class UpdateCartItemSerializer(serializers.Serializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    book = BookSerializer(read_only=True)
+    product = ProductSerializer(read_only=True)
 
     class Meta:
         model = CartItem
@@ -35,7 +36,7 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    book = BookSerializer(read_only=True)
+    product = ProductSerializer(read_only=True)
 
     class Meta:
         model = OrderItem

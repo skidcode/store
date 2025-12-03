@@ -11,7 +11,7 @@ from .serializers import (
     AddToCartSerializer,
     UpdateCartItemSerializer,
 )
-from books.models import Book
+from products.models import Product
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -44,12 +44,11 @@ class AddToCartView(APIView):
         serializer = AddToCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        book = Book.objects.get(id=serializer.validated_data["book_id"])
+        product = Product.objects.get(id=serializer.validated_data["product_id"])
         quantity = serializer.validated_data["quantity"]
 
         cart, _ = Cart.objects.get_or_create(user=request.user)
-        item, created = CartItem.objects.get_or_create(cart=cart, book=book)
-
+        item, created = CartItem.objects.get_or_create(cart=cart, product=product)
         if not created:
             item.quantity += quantity
         else:
