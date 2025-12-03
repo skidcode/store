@@ -1,9 +1,10 @@
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import status
 
+from .filters import OrderFilter
 from .models import Cart, CartItem, Order, OrderItem
 from .serializers import (
     CartSerializer,
@@ -82,6 +83,7 @@ class RemoveCartItemView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, item_id):
+
         try:
             item = CartItem.objects.get(id=item_id, cart__user=request.user)
         except CartItem.DoesNotExist:
@@ -137,3 +139,39 @@ class CreateOrderView(APIView):
         cart.items.all().delete()
 
         return Response(OrderSerializer(order).data, status=201)
+
+
+class ListOrdersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(user=request.user).order_by("-created_at")
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data, status=200)
+
+
+class CancelOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response({"detail": "Order not found"}, status=404)
+
+        if order.status != "PENDING":
+            return Response(
+                {"detail": "Only PENDING orders can be cancelled"}, status=400
+            )
+
+        order.status = "CANCELLED"
+        order.save()
+
+        return Response({"detail": "Order cancelled"}, status=200)
+
+
+class ListAllOrdersView(APIView):
+    queryset = Order.objects.all().order_by("-created_at")
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]
+    filterset_class = OrderFilter

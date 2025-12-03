@@ -11,6 +11,9 @@ from orders.views import (
     CartViewSet,
     CreateOrderView,
     OrderViewSet,
+    CancelOrderView,
+    ListOrdersView,
+    ListAllOrdersView,
     CartView,
     AddToCartView,
     UpdateCartItemView,
@@ -44,7 +47,15 @@ urlpatterns = [
         RemoveCartItemView.as_view(),
         name="cart_item_remove",
     ),
+    # Order
     path("api/orders/create/", CreateOrderView.as_view(), name="order_create"),
+    path(
+        "api/orders/<int:order_id>/cancel/",
+        CancelOrderView.as_view(),
+        name="order_cancel",
+    ),
+    path("api/orders/", ListOrdersView.as_view(), name="order_list"),
+    path("api/all/orders/", ListAllOrdersView.as_view(), name="admin_orders"),
     # API
     path("api/", include(router.urls)),
 ]
