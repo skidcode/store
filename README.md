@@ -1,37 +1,99 @@
-# book-store
+# Store — Full Stack E-commerce Platform
 
-BookStore
+A modern e-commerce application built with **Django REST Framework (backend)** and **React (frontend)**.  
+Includes authentication, product management, shopping cart, orders, and Stripe payments.
 
-## Arquitectura General del proyecto
+**Available in:**  
+[English](README.md) · [Español](README.es.md)
 
-### Frontend (React)
+---
 
-Vite o Create React App
+## Features
 
-React Router (rutas)
+### Authentication
 
-Context o Redux/Zustand para carrito y usuario
+- JWT authentication (login, register, refresh)
+- Protected routes (backend & frontend)
+- Admin and standard user roles (planned)
 
-Llama al backend via REST (JSON)
+### Products
 
-### Backend (Django + DRF)
+- Product catalog with categories
+- Slugs, images, price, stock management
+- Filtering, search, pagination (planned)
 
-Django para el proyecto base
+### Shopping Cart
 
-Django REST Framework para API
+- Add / update / remove items
+- Cart linked to authenticated user
+- Automatic creation of user cart
 
-Django admin para gestionar libros, usuarios, pedidos
+### Orders
 
-Autenticacion con JWT (simplejwt)
+- Create order from cart
+- Order items snapshot (unit price + quantity)
+- Cancel order (if pending)
+- Admin order listing with filtering
 
-### Base de datos: PostgreSQL
+### Payments (Stripe)
 
-Servicios externos
+- Stripe Checkout (planned)
+- Stripe webhook to confirm payments (planned)
+- Order status update to PAID (planned)
 
-Stripe -> pagos
+### Admin Features
 
-Deploy:
+- Global order listing (completed)
+- Filters using django-filter (completed)
+- Order status update (planned)
+- Sales dashboard (planned)
 
-Backend: Render / Railway / Fly.io
+---
 
-Frontend: Vercel / Netlify
+## Project Architecture
+
+Store/
+│
+├── backend/ # Django + DRF backend
+│ ├── accounts/ # Authentication logic
+│ ├── products/ # Product models & endpoints
+│ ├── orders/ # Cart, orders, admin filters
+│ ├── backend/ # Core settings & URLs
+│ └── ...
+│
+├── frontend/ # React (Vite or CRA)
+│ ├── src/
+│ ├── components/
+│ ├── pages/
+│ └── ...
+│
+├── README.md
+├── README.es.md
+├── ROADMAP.md
+└── ROADMAP.es.md
+
+### **Frontend**
+
+- React (Vite recommended)
+- React Router
+- Context API or Zustand/Redux
+- Uses REST API to communicate with backend
+
+### **Backend**
+
+- Django 5
+- Django REST Framework
+- JWT Auth (SimpleJWT)
+- django-filter
+- Pillow
+
+### **Database**
+
+- SQLite (development)
+- PostgreSQL (production recommended)
+
+### **External Services**
+
+- Stripe for payment processing
+
+---
