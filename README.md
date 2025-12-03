@@ -64,6 +64,7 @@ Includes authentication, product management, shopping cart, orders, and Stripe p
 
 ## Project Architecture
 
+```
 Store/
 │
 ├── backend/ # Django + DRF backend
@@ -83,6 +84,7 @@ Store/
 ├── README.es.md
 ├── ROADMAP.md
 └── ROADMAP.es.md
+```
 
 ### **Frontend**
 

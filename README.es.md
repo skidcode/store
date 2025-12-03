@@ -64,6 +64,7 @@ Incluye autenticación, gestión de productos, carrito de compras, órdenes y pa
 
 ## Arquitectura del Proyecto
 
+```
 Store/
 │
 ├── backend/ # Django + DRF backend
@@ -83,6 +84,7 @@ Store/
 ├── README.es.md
 ├── ROADMAP.md
 └── ROADMAP.es.md
+```
 
 ### **Frontend**
 
