@@ -8,9 +8,7 @@ from rest_framework_simplejwt.views import (
 from accounts.views import register
 from products.views import ProductViewSet, CategoryViewSet
 from orders.views import (
-    CartViewSet,
     CreateOrderView,
-    OrderViewSet,
     CancelOrderView,
     ListOrdersView,
     ListAllOrdersView,
@@ -24,9 +22,6 @@ router = DefaultRouter()
 router.register(r"products", ProductViewSet)
 router.register(r"product-categories", CategoryViewSet)
 router.register(r"categories", CategoryViewSet, basename="categories")
-
-router.register(r"carts", CartViewSet, basename="carts")
-router.register(r"orders", OrderViewSet, basename="orders")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
