@@ -1,24 +1,21 @@
-from rest_framework import status
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
+from .serializers import RegisterSerializer
+
+User = get_user_model()
 
 
-@api_view(["POST"])
-def register(request):
-    data = request.data
+class RegisterViewSet(viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
 
-    if User.objects.filter(username=data.get("username")).exists():
-        return Response({"detail": "Username already taken"}, status=400)
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    if User.objects.filter(email=data.get("email")).exists():
-        return Response({"detail": "Email already registered"}, status=400)
+        serializer.save()
 
-    user = User.objects.create(
-        username=data["username"],
-        email=data["email"],
-        password=make_password(data["password"]),
-    )
-
-    return Response({"detail": "User created successfully"}, status=201)
+        return Response(
+            {"detail": "User created successfully"}, status=status.HTTP_201_CREATED
+        )

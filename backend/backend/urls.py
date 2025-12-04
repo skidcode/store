@@ -6,7 +6,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from accounts.views import register
+from accounts.views import RegisterViewSet
 from products.views import ProductViewSet, CategoryViewSet
 from orders.views import (
     CartViewSet,
@@ -16,6 +16,8 @@ from orders.views import (
 
 # Routers
 router = DefaultRouter()
+# Auth Router
+router.register(r"auth/register", RegisterViewSet, basename="register")
 # Products Router
 router.register(r"products", ProductViewSet)
 # Categories Router
@@ -32,7 +34,6 @@ urlpatterns = [
     # Admin panel
     path("admin/", admin.site.urls),
     # Auth
-    path("api/auth/register/", register, name="register"),
     path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Routers
