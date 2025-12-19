@@ -12,6 +12,7 @@ from orders.views import (
     CartViewSet,
     UserOrderViewSet,
     AdminOrderViewSet,
+    StripeWebhookView,
 )
 
 # Routers
@@ -39,4 +40,5 @@ urlpatterns = [
     # Routers
     path("api/", include(router.urls)),
     path("api/admin/", include(admin_router.urls)),
+    path("api/payments/stripe/webhook/", StripeWebhookView.as_view(), name="stripe-webhook"),
 ]
