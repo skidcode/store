@@ -209,8 +209,15 @@ class UserOrderViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "Only PENDING orders can be cancelled"}, status=400
             )
 
-        order.status = "CANCELLED"
-        order.save()
+        with transaction.atomic():
+            # return stock to inventory
+            for item in order.items.select_related("product"):
+                Product.objects.filter(id=item.product_id).update(
+                    stock=F("stock") + item.quantity
+                )
+
+            order.status = "CANCELLED"
+            order.save()
 
         return Response({"detail": "Order cancelled"}, status=200)
 
@@ -249,12 +256,23 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
                 status=400,
             )
 
-        order.status = new_status
+        old_status = order.status
 
-        if new_status == "PAID" and not order.paid_at:
-            order.paid_at = order.paid_at or order.created_at
+        with transaction.atomic():
+            if old_status != "CANCELLED" and new_status == "CANCELLED":
+                # return stock to inventory once
+                for item in order.items.select_related("product"):
+                    Product.objects.filter(id=item.product_id).update(
+                        stock=F("stock") + item.quantity
+                    )
 
-        order.save()
+            order.status = new_status
+
+            if new_status == "PAID" and not order.paid_at:
+                order.paid_at = order.paid_at or order.created_at
+
+            order.save()
+
         return Response({"detail": "Status updated", "status": order.status})
 
     @action(detail=False, methods=["get"], url_path="report")
