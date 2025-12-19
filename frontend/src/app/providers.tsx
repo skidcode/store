@@ -1,7 +1,7 @@
 "use client";
 
+import { store } from "@lib";
 import { Provider } from "react-redux";
-import { store } from "../lib/store";
 
 type Props = {
   children: React.ReactNode;
