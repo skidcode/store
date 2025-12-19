@@ -74,10 +74,10 @@ Store/
 │ ├── backend/ # Configuración principal y URLs
 │ └── ...
 │
-├── frontend/ # React (Vite o CRA)
-│ ├── src/
+├── frontend/ # React (Next.js + Tailwind)
+│ ├── app/
 │ ├── components/
-│ ├── pages/
+│ ├── styles/
 │ └── ...
 │
 ├── README.md
@@ -88,9 +88,9 @@ Store/
 
 ### **Frontend**
 
-- React (recomendado con Vite)
-- React Router
-- Context API o Zustand/Redux
+- React con Next.js (App Router)
+- Tailwind CSS para estilos
+- Estado con Context API o Zustand/Redux
 - Comunicación con backend vía API REST
 
 ### **Backend**

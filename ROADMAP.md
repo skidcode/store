@@ -93,7 +93,10 @@ Each item belongs to a module (Backend, Frontend, DevOps) and can be checked off
 
 ---
 
-# 7. Frontend (React)
+# 7. Frontend (Next.js + Tailwind)
+
+- [ ] Initialize Next.js project with Tailwind CSS
+- [ ] Define design tokens (colors, typography, spacing)
 
 ### Authentication
 

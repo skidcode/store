@@ -94,7 +94,10 @@ Solo debés marcar cada casilla a medida que avances.
 
 ---
 
-# 7. Frontend (React)
+# 7. Frontend (Next.js + Tailwind)
+
+- [ ] Inicializar proyecto Next.js con Tailwind CSS
+- [ ] Definir tokens de diseño (colores, tipografía, espaciamiento)
 
 ### Autenticación
 
