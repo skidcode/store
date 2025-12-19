@@ -45,3 +45,44 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password2")
 
         return User.objects.create_user(**validated_data)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+            "address",
+            "city",
+            "country",
+            "postal_code",
+            "newsletter",
+        ]
+        read_only_fields = ["id", "username", "email"]
+
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "first_name",
+            "last_name",
+            "phone",
+            "address",
+            "city",
+            "country",
+            "postal_code",
+            "newsletter",
+        ]
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(
+        write_only=True, required=True, validators=[validate_password]
+    )
