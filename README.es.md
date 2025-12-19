@@ -111,3 +111,10 @@ Store/
 - Stripe para procesamiento de pagos
 
 ---
+
+## Configuración Backend (local)
+
+- Python 3.11+ con virtualenv recomendado.
+- Instalar dependencias: `pip install -r backend/requirements.txt`
+- Variables de entorno: crea `backend/.env` con `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`.
+- Ejecutar servidor: `cd backend && python manage.py runserver`
