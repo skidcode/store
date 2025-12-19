@@ -1,12 +1,36 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Sum, Count
 from django.db.models.functions import TruncDate
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+
+try:  # Stripe is optional; provide placeholder to allow tests without the package installed.
+    import stripe  # type: ignore
+except ImportError:  # pragma: no cover
+    class _StripePlaceholder:
+        class error:
+            class SignatureVerificationError(Exception):
+                ...
+
+        class Webhook:
+            @staticmethod
+            def construct_event(*args, **kwargs):
+                raise ImportError("stripe package not installed")
+
+        class checkout:
+            class Session:
+                @staticmethod
+                def create(*args, **kwargs):
+                    raise ImportError("stripe package not installed")
+
+    stripe = _StripePlaceholder()
 
 from .permissions import IsAdmin
 from .models import Cart, CartItem, Order, OrderItem
@@ -221,6 +245,71 @@ class UserOrderViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"detail": "Order cancelled"}, status=200)
 
+    @action(detail=True, methods=["post"])
+    def pay(self, request, pk=None):
+        """
+        Create a Stripe Checkout session for this order.
+        """
+
+        order = self.get_object()
+
+        if order.status != "PENDING":
+            return Response(
+                {"detail": "Only PENDING orders can be paid"}, status=400
+            )
+
+        if not settings.STRIPE_SECRET_KEY:
+            return Response(
+                {"detail": "Stripe is not configured (missing STRIPE_SECRET_KEY)"},
+                status=500,
+            )
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+
+        success_url = request.data.get("success_url")
+        cancel_url = request.data.get("cancel_url")
+
+        if not success_url or not cancel_url:
+            base = request.build_absolute_uri("/").rstrip("/")
+            success_url = success_url or f"{base}/checkout/success"
+            cancel_url = cancel_url or f"{base}/checkout/cancel"
+
+        line_items = []
+        for item in order.items.select_related("product"):
+            unit_amount = int(item.unit_price * 100)
+            line_items.append(
+                {
+                    "quantity": item.quantity,
+                    "price_data": {
+                        "currency": "usd",
+                        "unit_amount": unit_amount,
+                        "product_data": {"name": item.product.name},
+                    },
+                }
+            )
+
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=["card"],
+                mode="payment",
+                line_items=line_items,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata={"order_id": order.id},
+            )
+        except ImportError:
+            return Response(
+                {"detail": "Stripe SDK not installed. Run `pip install stripe`."},
+                status=500,
+            )
+
+        order.stripe_session_id = session.id
+        order.save(update_fields=["stripe_session_id"])
+
+        return Response(
+            {"checkout_url": session.url, "session_id": session.id}, status=200
+        )
+
 
 # ---------------------------------------------------
 # ADMIN ORDER VIEWSET
@@ -269,7 +358,7 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
             order.status = new_status
 
             if new_status == "PAID" and not order.paid_at:
-                order.paid_at = order.paid_at or order.created_at
+                order.paid_at = order.paid_at or timezone.now()
 
             order.save()
 
@@ -314,3 +403,58 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
                 "revenue_by_day": list(revenue_by_day),
             }
         )
+
+
+class StripeWebhookView(APIView):
+    """
+    Handles Stripe webhook events.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        webhook_secret = settings.STRIPE_WEBHOOK_SECRET
+
+        if not webhook_secret:
+            return Response(
+                {"detail": "Webhook secret not configured"},
+                status=500,
+            )
+
+        payload = request.body
+        sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        except ValueError:
+            return Response(status=400)
+        except stripe.error.SignatureVerificationError:
+            return Response(status=400)
+        except ImportError:
+            return Response(
+                {"detail": "Stripe SDK not installed. Run `pip install stripe`."},
+                status=500,
+            )
+
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            order_id = session.get("metadata", {}).get("order_id")
+            if order_id:
+                with transaction.atomic():
+                    try:
+                        order = Order.objects.select_for_update().get(id=order_id)
+                    except Order.DoesNotExist:
+                        return Response(status=200)
+
+                    if order.status != "PAID":
+                        order.status = "PAID"
+                        order.paid_at = order.paid_at or timezone.now()
+                        order.stripe_session_id = session.get(
+                            "id", order.stripe_session_id
+                        )
+                        order.save(update_fields=["status", "paid_at", "stripe_session_id"])
+
+        return Response(status=200)

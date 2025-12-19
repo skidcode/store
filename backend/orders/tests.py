@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework.test import APITestCase
+from unittest.mock import patch
 
 from products.models import Product
 from orders.models import Order, OrderItem, Cart, CartItem
@@ -115,3 +117,67 @@ class CartAndOrderTests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         for key in ["total_orders", "total_revenue", "orders_by_status", "revenue_by_day"]:
             self.assertIn(key, resp.data)
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_dummy")
+    @patch("orders.views.stripe.checkout.Session.create")
+    def test_pay_creates_stripe_session(self, mock_create):
+        self.authenticate()
+        self.client.post(
+            "/api/cart/add/", {"product_id": self.product.id, "quantity": 1}
+        )
+        create_resp = self.client.post(
+            "/api/my/orders/create_order/",
+            {"shipping_address": "123 Street"},
+            format="json",
+        )
+        order_id = create_resp.data["id"]
+
+        mock_create.return_value = type(
+            "Session", (), {"id": "cs_test_123", "url": "https://stripe.test/session"}
+        )()
+
+        pay_resp = self.client.post(
+            f"/api/my/orders/{order_id}/pay/",
+            {
+                "success_url": "https://example.com/success",
+                "cancel_url": "https://example.com/cancel",
+            },
+            format="json",
+        )
+
+        self.assertEqual(pay_resp.status_code, 200)
+        self.assertEqual(pay_resp.data["session_id"], "cs_test_123")
+        mock_create.assert_called_once()
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="whsec_test_dummy")
+    @patch("orders.views.stripe.Webhook.construct_event")
+    def test_webhook_marks_order_paid(self, mock_construct_event):
+        self.authenticate()
+        self.client.post(
+            "/api/cart/add/", {"product_id": self.product.id, "quantity": 1}
+        )
+        create_resp = self.client.post(
+            "/api/my/orders/create_order/",
+            {"shipping_address": "123 Street"},
+            format="json",
+        )
+        order_id = create_resp.data["id"]
+        order = Order.objects.get(id=order_id)
+
+        mock_construct_event.return_value = {
+            "type": "checkout.session.completed",
+            "data": {"object": {"id": "cs_test_123", "metadata": {"order_id": order_id}}},
+        }
+
+        resp = self.client.post(
+            "/api/payments/stripe/webhook/",
+            data="{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="dummy",
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(order.status, "PAID")
+        self.assertEqual(order.stripe_session_id, "cs_test_123")
+        self.assertIsNotNone(order.paid_at)
