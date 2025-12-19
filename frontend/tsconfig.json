@@ -22,7 +22,11 @@
     "paths": {
       "@types": ["./src/types/index"],
       "@/*": ["./src/*"],
-      "@types/*": ["./src/types/*"]
+      "@types/*": ["./src/types/*"],
+      "@components": ["./src/components/index"],
+      "@components/*": ["./src/components/*"],
+      "@lib": ["./src/lib/index"],
+      "@lib/*": ["./src/lib/*"]
     }
   },
   "include": [
