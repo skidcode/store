@@ -14,3 +14,4 @@ build/
 # Environment files
 backend/.env
 .env
+frontend/.env.local
