@@ -66,24 +66,22 @@ Incluye autenticación, gestión de productos, carrito de compras, órdenes y pa
 
 ```
 Store/
-│
-├── backend/ # Django + DRF backend
-│ ├── accounts/ # Lógica de autenticación
-│ ├── products/ # Modelos y endpoints de productos
-│ ├── orders/ # Carrito, órdenes, filtros admin
-│ ├── backend/ # Configuración principal y URLs
-│ └── ...
-│
-├── frontend/ # React (Next.js + Tailwind)
-│ ├── app/
-│ ├── components/
-│ ├── styles/
-│ └── ...
-│
-├── README.md
-├── README.es.md
-├── ROADMAP.md
-└── ROADMAP.es.md
++-- backend/               # Django + DRF backend
+�   +-- accounts/          # L�gica de autenticaci�n
+�   +-- products/          # Modelos y endpoints de productos
+�   +-- orders/            # Carrito, �rdenes, filtros admin
+�   +-- backend/           # Configuraci�n principal y URLs
+�   +-- ...
++-- frontend/              # React (Next.js + Tailwind)
+    +-- src/
+        +-- app/
+        +-- components/
+        +-- styles/
+
+README.md
+README.es.md
+ROADMAP.md
+ROADMAP.es.md
 ```
 
 ### **Frontend**
@@ -118,3 +116,5 @@ Store/
 - Instalar dependencias: `pip install -r backend/requirements.txt`
 - Variables de entorno: crea `backend/.env` con `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`.
 - Ejecutar servidor: `cd backend && python manage.py runserver`
+
+

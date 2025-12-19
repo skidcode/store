@@ -66,24 +66,22 @@ Includes authentication, product management, shopping cart, orders, and Stripe p
 
 ```
 Store/
-│
-├── backend/ # Django + DRF backend
-│ ├── accounts/ # Authentication logic
-│ ├── products/ # Product models & endpoints
-│ ├── orders/ # Cart, orders, admin filters
-│ ├── backend/ # Core settings & URLs
-│ └── ...
-│
-├── frontend/ # React (Next.js + Tailwind)
-│ ├── app/
-│ ├── components/
-│ ├── styles/
-│ └── ...
-│
-├── README.md
-├── README.es.md
-├── ROADMAP.md
-└── ROADMAP.es.md
++-- backend/               # Django + DRF backend
+�   +-- accounts/          # Authentication logic
+�   +-- products/          # Product models & endpoints
+�   +-- orders/            # Cart, orders, admin filters
+�   +-- backend/           # Core settings & URLs
+�   +-- ...
++-- frontend/              # React (Next.js + Tailwind)
+    +-- src/
+        +-- app/
+        +-- components/
+        +-- styles/
+
+README.md
+README.es.md
+ROADMAP.md
+ROADMAP.es.md
 ```
 
 ### **Frontend**
@@ -118,3 +116,5 @@ Store/
 - Install deps: `pip install -r backend/requirements.txt`
 - Env vars: create `backend/.env` with `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 - Run server: `cd backend && python manage.py runserver`
+
+
