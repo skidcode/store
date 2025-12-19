@@ -10,3 +10,7 @@ build/
 # Django
 *.sqlite3
 *.log
+
+# Environment files
+backend/.env
+.env
