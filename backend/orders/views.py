@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum, Count
+from django.db.models.functions import TruncDate
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
@@ -224,6 +225,8 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
     Admin-only:
     - GET /api/orders/
     - Filtering enabled
+    - Change order status
+    - Basic sales report
     """
 
     queryset = Order.objects.all().order_by("-created_at")
@@ -233,3 +236,63 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = OrderFilter
     ordering_fields = ["total_amount", "created_at", "status"]
+
+    @action(detail=True, methods=["post"], url_path="set-status")
+    def set_status(self, request, pk=None):
+        order = self.get_object()
+        new_status = request.data.get("status")
+
+        valid_statuses = dict(Order.STATUS_CHOICES).keys()
+        if new_status not in valid_statuses:
+            return Response(
+                {"detail": f"Invalid status. Allowed: {', '.join(valid_statuses)}"},
+                status=400,
+            )
+
+        order.status = new_status
+
+        if new_status == "PAID" and not order.paid_at:
+            order.paid_at = order.paid_at or order.created_at
+
+        order.save()
+        return Response({"detail": "Status updated", "status": order.status})
+
+    @action(detail=False, methods=["get"], url_path="report")
+    def report(self, request):
+        """
+        Basic sales report for admins.
+
+        Returns:
+        - total_orders
+        - total_revenue
+        - orders_by_status
+        - revenue_by_day (last 30 days)
+        """
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        total_orders = queryset.count()
+        total_revenue = queryset.aggregate(total=Sum("total_amount"))["total"] or 0
+
+        orders_by_status = (
+            queryset.values("status")
+            .annotate(count=Count("id"), revenue=Sum("total_amount"))
+            .order_by("status")
+        )
+
+        revenue_by_day = (
+            queryset.filter(status="PAID")
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(revenue=Sum("total_amount"), orders=Count("id"))
+            .order_by("-day")[:30]
+        )
+
+        return Response(
+            {
+                "total_orders": total_orders,
+                "total_revenue": total_revenue,
+                "orders_by_status": list(orders_by_status),
+                "revenue_by_day": list(revenue_by_day),
+            }
+        )
