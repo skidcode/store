@@ -54,7 +54,7 @@ class CartAndOrderTests(APITestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("available_stock", resp.data)
 
-    def test_create_order_deducts_and_cancel_restores_stock(self):
+    def test_create_order_keeps_stock_until_paid(self):
         self.authenticate()
         # add 3 units to cart
         self.client.post(
@@ -69,45 +69,51 @@ class CartAndOrderTests(APITestCase):
         self.assertEqual(create_resp.status_code, 201)
 
         self.product.refresh_from_db()
-        self.assertEqual(self.product.stock, 2)
+        # Stock is not deducted until payment
+        self.assertEqual(self.product.stock, 5)
 
         order_id = create_resp.data["id"]
-        # cancel should restore stock to original 5
+        # cancel should not change stock
         cancel_resp = self.client.post(f"/api/my/orders/{order_id}/cancel/")
         self.assertEqual(cancel_resp.status_code, 200)
 
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 5)
 
-    def test_admin_set_status_cancel_restocks_once(self):
-        # create an order manually in PAID with reduced stock
-        cart = Cart.objects.create(user=self.user)
-        item = CartItem.objects.create(cart=cart, product=self.product, quantity=2)
-
+    def test_admin_set_status_paid_and_cancel_restocks_once(self):
         self.authenticate()
         self.client.post(
+            "/api/cart/add/", {"product_id": self.product.id, "quantity": 2}
+        )
+        create_resp = self.client.post(
             "/api/my/orders/create_order/",
             {"shipping_address": "123 Street"},
             format="json",
         )
-        order = Order.objects.first()
+        order = Order.objects.get(id=create_resp.data["id"])
 
-        # simulate already paid by changing status without restocking
-        order.status = "PAID"
-        order.save()
+        # admin marks as PAID -> deduct stock
+        self.authenticate(self.admin)
+        resp_paid = self.client.post(
+            f"/api/admin/orders/{order.id}/set-status/", {"status": "PAID"}
+        )
+        self.assertEqual(resp_paid.status_code, 200)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 3)
 
-        # admin cancels -> restock to 5
-        self.authenticate(self.admin)
-        resp = self.client.post(f"/api/admin/orders/{order.id}/set-status/", {"status": "CANCELLED"})
-        self.assertEqual(resp.status_code, 200)
+        # admin cancels -> restock
+        resp_cancel = self.client.post(
+            f"/api/admin/orders/{order.id}/set-status/", {"status": "CANCELLED"}
+        )
+        self.assertEqual(resp_cancel.status_code, 200)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 5)
 
         # cancelling again should NOT restock further
-        resp_second = self.client.post(f"/api/admin/orders/{order.id}/set-status/", {"status": "CANCELLED"})
-        self.assertEqual(resp_second.status_code, 200)
+        resp_cancel_again = self.client.post(
+            f"/api/admin/orders/{order.id}/set-status/", {"status": "CANCELLED"}
+        )
+        self.assertEqual(resp_cancel_again.status_code, 200)
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 5)
 
@@ -181,3 +187,5 @@ class CartAndOrderTests(APITestCase):
         self.assertEqual(order.status, "PAID")
         self.assertEqual(order.stripe_session_id, "cs_test_123")
         self.assertIsNotNone(order.paid_at)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 4)

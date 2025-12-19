@@ -214,9 +214,6 @@ class UserOrderViewSet(viewsets.ReadOnlyModelViewSet):
                         quantity=item.quantity,
                         unit_price=item.product.price,
                     )
-                    Product.objects.filter(id=item.product_id).update(
-                        stock=F("stock") - item.quantity
-                    )
 
                 cart.items.all().delete()
 
@@ -233,15 +230,8 @@ class UserOrderViewSet(viewsets.ReadOnlyModelViewSet):
                 {"detail": "Only PENDING orders can be cancelled"}, status=400
             )
 
-        with transaction.atomic():
-            # return stock to inventory
-            for item in order.items.select_related("product"):
-                Product.objects.filter(id=item.product_id).update(
-                    stock=F("stock") + item.quantity
-                )
-
-            order.status = "CANCELLED"
-            order.save()
+        order.status = "CANCELLED"
+        order.save()
 
         return Response({"detail": "Order cancelled"}, status=200)
 
@@ -257,6 +247,19 @@ class UserOrderViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(
                 {"detail": "Only PENDING orders can be paid"}, status=400
             )
+
+        # Validate stock availability before creating session
+        items = list(order.items.select_related("product").select_for_update())
+        for item in items:
+            if item.product.stock < item.quantity:
+                return Response(
+                    {
+                        "detail": "Not enough stock available",
+                        "product": item.product.name,
+                        "available_stock": item.product.stock,
+                    },
+                    status=400,
+                )
 
         if not settings.STRIPE_SECRET_KEY:
             return Response(
@@ -348,8 +351,25 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
         old_status = order.status
 
         with transaction.atomic():
-            if old_status != "CANCELLED" and new_status == "CANCELLED":
-                # return stock to inventory once
+            if old_status != "PAID" and new_status == "PAID":
+                # Deduct stock at payment time
+                items = list(order.items.select_related("product").select_for_update())
+                for item in items:
+                    if item.product.stock < item.quantity:
+                        return Response(
+                            {
+                                "detail": "Not enough stock available",
+                                "product": item.product.name,
+                                "available_stock": item.product.stock,
+                            },
+                            status=400,
+                        )
+                for item in items:
+                    Product.objects.filter(id=item.product_id).update(
+                        stock=F("stock") - item.quantity
+                    )
+            elif old_status == "PAID" and new_status == "CANCELLED":
+                # Restock if a paid order is cancelled/refunded
                 for item in order.items.select_related("product"):
                     Product.objects.filter(id=item.product_id).update(
                         stock=F("stock") + item.quantity
@@ -450,6 +470,18 @@ class StripeWebhookView(APIView):
                         return Response(status=200)
 
                     if order.status != "PAID":
+                        items = list(
+                            order.items.select_related("product").select_for_update()
+                        )
+                        for item in items:
+                            if item.product.stock < item.quantity:
+                                return Response(status=400)
+
+                        for item in items:
+                            Product.objects.filter(id=item.product_id).update(
+                                stock=F("stock") - item.quantity
+                            )
+
                         order.status = "PAID"
                         order.paid_at = order.paid_at or timezone.now()
                         order.stripe_session_id = session.get(
