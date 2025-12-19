@@ -44,7 +44,7 @@ Each item belongs to a module (Backend, Frontend, DevOps) and can be checked off
 - [x] Add product to cart
 - [x] Update item quantity
 - [x] Remove item
-- [ ] Clear cart endpoint
+- [x] Clear cart endpoint
 - [ ] Anonymous cart (optional)
 
 ---
@@ -56,10 +56,10 @@ Each item belongs to a module (Backend, Frontend, DevOps) and can be checked off
 - [x] Initial order status: `PENDING`
 - [x] Cancel order (only if PENDING)
 - [x] List user orders
-- [ ] Order detail endpoint
+- [x] Order detail endpoint
 - [ ] Reduce stock after successful payment
-- [ ] Order status: `SHIPPED`
-- [ ] Order status: `DELIVERED`
+- [x] Order status: `SHIPPED`
+- [x] Order status: `DELIVERED`
 - [ ] Refunds (optional)
 - [ ] Order status history (optional)
 
@@ -69,27 +69,27 @@ Each item belongs to a module (Backend, Frontend, DevOps) and can be checked off
 
 - [x] List all orders (admin)
 - [x] Advanced filtering with django-filter
-- [ ] Filter by user
-- [ ] Update order status (admin)
+- [x] Filter by user
+- [x] Update order status (admin)
 - [ ] Export orders to CSV / Excel
 - [ ] Admin dashboard:
-  - [ ] Sales per day
+  - [x] Sales per day
   - [ ] Best-selling products
-  - [ ] Orders by status
+  - [x] Orders by status
 
 ---
 
 # 6. Payments (Stripe)
 
-- [ ] Create Stripe Checkout session
-- [ ] Redirect to Stripe payment page
-- [ ] Stripe webhook implementation
-- [ ] Verify webhook signature
-- [ ] Mark order as `PAID`
-- [ ] Save `paid_at` timestamp
-- [ ] Save `stripe_session_id`
-- [ ] Successful payment page
-- [ ] Failed payment page
+- [x] Create Stripe Checkout session
+- [ ] Redirect to Stripe payment page (frontend)
+- [x] Stripe webhook implementation
+- [x] Verify webhook signature
+- [x] Mark order as `PAID`
+- [x] Save `paid_at` timestamp
+- [x] Save `stripe_session_id`
+- [ ] Successful payment page (frontend)
+- [ ] Failed payment page (frontend)
 
 ---
 

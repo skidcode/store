@@ -45,7 +45,7 @@ Solo debés marcar cada casilla a medida que avances.
 - [x] Agregar producto al carrito
 - [x] Actualizar cantidad
 - [x] Eliminar item
-- [ ] Vaciar carrito
+- [x] Vaciar carrito
 - [ ] Carrito anónimo (opcional)
 
 ---
@@ -57,10 +57,10 @@ Solo debés marcar cada casilla a medida que avances.
 - [x] Estado inicial: `PENDING`
 - [x] Cancelar orden (solo si está PENDING)
 - [x] Listar órdenes del usuario
-- [ ] Ver detalle de una orden individual
+- [x] Ver detalle de una orden individual
 - [ ] Restar stock después del pago
-- [ ] Estado SHIPPED
-- [ ] Estado DELIVERED
+- [x] Estado SHIPPED
+- [x] Estado DELIVERED
 - [ ] Reembolsos (opcional)
 - [ ] Historial completo de cambios de estado (opcional)
 
@@ -70,27 +70,27 @@ Solo debés marcar cada casilla a medida que avances.
 
 - [x] Listar todas las órdenes (admin)
 - [x] Filtros avanzados con django-filter
-- [ ] Filtros por usuario
-- [ ] Cambiar estado de una orden (admin)
+- [x] Filtros por usuario
+- [x] Cambiar estado de una orden (admin)
 - [ ] Exportar órdenes a CSV / Excel
 - [ ] Dashboard admin:
-  - [ ] Ventas por día
+  - [x] Ventas por día
   - [ ] Productos más vendidos
-  - [ ] Órdenes por estado
+  - [x] Órdenes por estado
 
 ---
 
 # 6. Pagos (Stripe)
 
-- [ ] Crear sesión de pago (Stripe Checkout)
-- [ ] Redirección automática al checkout
-- [ ] Webhook de Stripe
-- [ ] Verificar firma del webhook
-- [ ] Marcar orden como `PAID`
-- [ ] Guardar fecha `paid_at`
-- [ ] Guardar `stripe_session_id`
-- [ ] Página de pago exitoso
-- [ ] Página de pago fallido
+- [x] Crear sesión de pago (Stripe Checkout)
+- [ ] Redirección automática al checkout (frontend)
+- [x] Webhook de Stripe
+- [x] Verificar firma del webhook
+- [x] Marcar orden como `PAID`
+- [x] Guardar fecha `paid_at`
+- [x] Guardar `stripe_session_id`
+- [ ] Página de pago exitoso (frontend)
+- [ ] Página de pago fallido (frontend)
 
 ---
 
